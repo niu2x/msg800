@@ -51,7 +51,7 @@ impl Socks5 {
 
         let mut up_stream = self.connect_up_stream(&target_addr).await?;
 
-        crate::bridge(&mut up_stream, &mut self.down_stream).await
+        crate::tunel::bridge(&mut up_stream, &mut self.down_stream).await
     }
 
     async fn read_auth(&mut self) -> Result<AuthHeader> {

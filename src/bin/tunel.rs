@@ -8,12 +8,14 @@ struct Args {
     source_port: u16,
     target_host: String,
     target_port: u16,
+    mode: String,
 }
 
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
 
+    let mode = args.mode;
     let source_addr = format!("{}:{}", args.source_host, args.source_port);
     let target_addr = format!("{}:{}", args.target_host, args.target_port);
 
@@ -33,6 +35,6 @@ async fn main() {
 
 async fn process(mut src: TcpStream, target_addr: &str) -> msg800::Result<()> {
     let mut dest = TcpStream::connect(target_addr).await?;
-    msg800::bridge(&mut src, &mut dest).await?;
+    msg800::tunel::bridge(&mut src, &mut dest).await?;
     Ok(())
 }
