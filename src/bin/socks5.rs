@@ -1,5 +1,5 @@
 use clap::Parser;
-use msg800::v5::{self, Socks5};
+use msg800::proxy::Socks5;
 use std::error::Error;
 use tokio::net::{TcpListener, TcpStream};
 
@@ -7,9 +7,6 @@ use tokio::net::{TcpListener, TcpStream};
 struct Args {
     #[arg(short, default_value_t = 8082)]
     port: u16,
-
-    tiger_host: String,
-    tiger_port: u16,
 }
 
 #[tokio::main]
@@ -17,24 +14,21 @@ async fn main() {
     let args = Args::parse();
 
     let addr = format!("127.0.0.1:{}", args.port);
-    let tiger_addr = format!("{}:{}", args.tiger_host, args.tiger_port);
 
     let listener = TcpListener::bind(&addr).await.unwrap();
 
-    println!("wolf listen on {addr}");
-    println!("tiger is at: {tiger_addr}");
+    println!("socks5 listen on {addr}");
 
     loop {
         let (socket, _) = listener.accept().await.unwrap();
-        let addr = tiger_addr.clone();
         tokio::spawn(async move {
-            let _ = process(socket, addr).await;
+            let _ = process(socket).await;
         });
     }
 }
 
-async fn process(socket: TcpStream, tiger_addr: String) -> Result<(), Box<dyn Error>> {
-    let mut socks5 = Socks5::new(socket, v5::Mode::WOLF(tiger_addr));
+async fn process(socket: TcpStream) -> Result<(), Box<dyn Error>> {
+    let mut socks5 = Socks5::new(socket);
     let _ = socks5.process().await?;
 
     Ok(())

@@ -17,12 +17,6 @@ enum Addr {
     DOMAIN(String),
 }
 
-#[derive(Debug, Clone)]
-pub enum Mode {
-    WOLF(String),
-    TIGER,
-}
-
 #[derive(Debug)]
 struct TargetAddress {
     pub unused_0: u8,
@@ -35,16 +29,14 @@ struct TargetAddress {
 
 pub struct Socks5 {
     down_stream: TcpStream,
-    mode: Mode,
 }
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 impl Socks5 {
-    pub fn new(socket: TcpStream, mode: Mode) -> Socks5 {
+    pub fn new(socket: TcpStream) -> Socks5 {
         return Socks5 {
             down_stream: socket,
-            mode,
         };
     }
 
