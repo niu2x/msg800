@@ -1,5 +1,6 @@
 use clap::Parser;
-use msg800;
+use msg800::{self, tunel};
+use std::str::FromStr;
 use tokio::net::{TcpListener, TcpStream};
 
 #[derive(Parser, Debug)]
@@ -15,7 +16,7 @@ struct Args {
 async fn main() {
     let args = Args::parse();
 
-    let mode = args.mode;
+    let mode = tunel::Mode::from_str(&args.mode).unwrap();
     let source_addr = format!("{}:{}", args.source_host, args.source_port);
     let target_addr = format!("{}:{}", args.target_host, args.target_port);
 
@@ -28,13 +29,13 @@ async fn main() {
         let (socket, _) = listener.accept().await.unwrap();
         let target_addr = target_addr.clone();
         tokio::spawn(async move {
-            let _ = process(socket, &target_addr).await;
+            let _ = process(socket, &target_addr, mode).await;
         });
     }
 }
 
-async fn process(mut src: TcpStream, target_addr: &str) -> msg800::Result<()> {
+async fn process(mut src: TcpStream, target_addr: &str, mode: tunel::Mode) -> msg800::Result<()> {
     let mut dest = TcpStream::connect(target_addr).await?;
-    msg800::tunel::bridge(&mut src, &mut dest).await?;
+    msg800::tunel::bridge(&mut src, &mut dest, mode).await?;
     Ok(())
 }

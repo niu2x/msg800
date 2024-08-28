@@ -1,4 +1,5 @@
 use crate::msg::Message;
+use crate::tunel;
 use std::error::Error;
 pub use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -51,7 +52,7 @@ impl Socks5 {
 
         let mut up_stream = self.connect_up_stream(&target_addr).await?;
 
-        crate::tunel::bridge(&mut up_stream, &mut self.down_stream).await
+        tunel::bridge(&mut up_stream, &mut self.down_stream, tunel::Mode::FORWARD).await
     }
 
     async fn read_auth(&mut self) -> Result<AuthHeader> {

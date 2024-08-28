@@ -1,45 +1,51 @@
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
+use strum_macros::EnumString;
+
+#[derive(EnumString, Clone, Copy)]
+pub enum Mode {
+    FORWARD,
+}
+
 const BUF_SIZE: usize = 4096;
 
-pub async fn bridge(mary: &mut TcpStream, bob: &mut TcpStream) -> crate::Result<()> {
-    let (mut mary_read, mut mary_write) = io::split(mary);
-    let (mut bob_read, mut bob_write) = io::split(bob);
+pub async fn bridge(src: &mut TcpStream, dest: &mut TcpStream, mode: Mode) -> crate::Result<()> {
+    let (mut src_read, mut src_write) = io::split(src);
+    let (mut dest_read, mut dest_write) = io::split(dest);
 
-    let req = async {
+    let src_to_dest = async {
         let mut buf = [0; BUF_SIZE];
 
-        let ret = loop {
-            match bob_read.read(&mut buf).await {
-                Ok(len) if len > 0 => mary_write.write_all(&buf[0..len]).await?,
+        loop {
+            match dest_read.read(&mut buf).await {
+                Ok(len) if len > 0 => match mode {
+                    Mode::FORWARD => src_write.write_all(&buf[0..len]).await?,
+                },
                 _ => {
-                    mary_write.shutdown().await?;
+                    src_write.shutdown().await?;
                     break Ok::<(), std::io::Error>(());
                 }
             }
-        };
-
-        println!("req finished");
-        ret
+        }
     };
 
-    let resp = async {
+    let dest_to_src = async {
         let mut buf = [0; BUF_SIZE];
-        let ret = loop {
-            match mary_read.read(&mut buf).await {
-                Ok(len) if len > 0 => bob_write.write_all(&buf[0..len]).await?,
+        loop {
+            match src_read.read(&mut buf).await {
+                Ok(len) if len > 0 => match mode {
+                    Mode::FORWARD => dest_write.write_all(&buf[0..len]).await?,
+                },
                 _ => {
-                    bob_write.shutdown().await?;
+                    dest_write.shutdown().await?;
                     break Ok::<(), std::io::Error>(());
                 }
             }
-        };
-        println!("resp finished");
-        ret
+        }
     };
 
-    match tokio::try_join!(req, resp) {
+    match tokio::try_join!(src_to_dest, dest_to_src) {
         Err(e) => Err(Box::new(e)),
         _ => Ok(()),
     }
