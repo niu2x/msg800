@@ -1,0 +1,10 @@
+[package]
+name = "msg800"
+version = "0.1.1"
+edition = "2021"
+
+[dependencies]
+bytebuffer = "2.3.0"
+bytes = "1.7.1"
+clap = { version = "4.5.16", features = ["derive"] }
+tokio = { version = "1.39.3", features = ["full"] }
