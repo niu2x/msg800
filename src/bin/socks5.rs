@@ -1,6 +1,5 @@
 use clap::Parser;
 use msg800::proxy::Socks5;
-use std::error::Error;
 use tokio::net::{TcpListener, TcpStream};
 
 #[derive(Parser, Debug)]
@@ -27,9 +26,8 @@ async fn main() {
     }
 }
 
-async fn process(socket: TcpStream) -> Result<(), Box<dyn Error>> {
+async fn process(socket: TcpStream) -> msg800::Result<()> {
     let mut socks5 = Socks5::new(socket);
     let _ = socks5.process().await?;
-
     Ok(())
 }

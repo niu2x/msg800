@@ -51,50 +51,7 @@ impl Socks5 {
 
         let mut up_stream = self.connect_up_stream(&target_addr).await?;
 
-        Socks5::pipe(&mut up_stream, &mut self.down_stream, &target_addr).await?;
-
-        Ok(())
-    }
-
-    async fn pipe(
-        up_stream: &mut TcpStream,
-        down_stream: &mut TcpStream,
-        target_addr: &TargetAddress,
-    ) -> Result<()> {
-        let (mut up_stream_read, mut up_stream_write) = io::split(up_stream);
-        let (mut down_stream_read, mut down_stream_write) = io::split(down_stream);
-
-        let req = async {
-            let mut buf = [0; 1024];
-
-            loop {
-                match down_stream_read.read(&mut buf).await {
-                    Ok(len) if len > 0 => up_stream_write.write_all(&buf[0..len]).await?,
-                    _ => {
-                        up_stream_write.shutdown().await?;
-                        break Ok::<(), std::io::Error>(());
-                    }
-                }
-            }
-        };
-
-        let resp = async {
-            let mut buf = [0; 1024];
-            loop {
-                match up_stream_read.read(&mut buf).await {
-                    Ok(len) if len > 0 => down_stream_write.write_all(&buf[0..len]).await?,
-                    _ => {
-                        down_stream_write.shutdown().await?;
-                        break Ok::<(), std::io::Error>(());
-                    }
-                }
-            }
-        };
-
-        println!("try_join {target_addr:?}");
-        let _ = tokio::try_join!(req, resp);
-        println!("try_join finished {target_addr:?}");
-        Ok(())
+        crate::bridge(&mut up_stream, &mut self.down_stream).await
     }
 
     async fn read_auth(&mut self) -> Result<AuthHeader> {

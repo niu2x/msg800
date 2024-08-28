@@ -1,12 +1,9 @@
 use bytebuffer::ByteBuffer;
-use std::error::Error;
 use tokio::io::AsyncReadExt;
 
 pub struct Message {
     buf: ByteBuffer,
 }
-
-type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 const MAGIC: u64 = 0x20240828;
 
@@ -43,7 +40,7 @@ impl Message {
         block.into_vec()
     }
 
-    pub async fn unpack<T>(&mut self, reader: &mut T) -> Result<()>
+    pub async fn unpack<T>(&mut self, reader: &mut T) -> crate::Result<()>
     where
         T: AsyncReadExt + std::marker::Unpin,
     {
