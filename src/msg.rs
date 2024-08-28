@@ -1,5 +1,5 @@
 use bytebuffer::ByteBuffer;
-use tokio::io::AsyncReadExt;
+use tokio::io::{self, AsyncReadExt};
 
 pub struct Message {
     buf: ByteBuffer,
@@ -40,15 +40,16 @@ impl Message {
         block.into_vec()
     }
 
-    pub async fn unpack<T>(&mut self, reader: &mut T) -> crate::Result<()>
+    pub async fn unpack<T>(&mut self, reader: &mut T) -> io::Result<()>
     where
         T: AsyncReadExt + std::marker::Unpin,
     {
         let encrypt_total_len = reader.read_u64().await?;
         let total_len = (encrypt_total_len ^ MAGIC) as usize;
-        let mut temp = vec![0; total_len];
+        let mut temp = vec![0; total_len - 8];
         reader.read_exact(&mut temp).await?;
         self.buf.write_bytes(&temp);
+        println!("unpack");
         Ok(())
     }
 }
