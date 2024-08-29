@@ -120,7 +120,7 @@ impl Socks5 {
             target_addr.addr_type,
         ];
 
-        let mut msg = Message::new();
+        let mut msg = Message::new("", "");
         msg.write_bytes(&buf);
 
         let Addr::DOMAIN(domain) = &target_addr.addr;

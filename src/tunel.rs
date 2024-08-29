@@ -5,18 +5,18 @@ use tokio::net::TcpStream;
 use crate::msg::Message;
 use strum_macros::EnumString;
 
-#[derive(EnumString, Clone, Copy)]
+#[derive(EnumString, Clone)]
 pub enum Mode {
     FORWARD,
-    ENCRYPT,
-    DECRYPT,
+    ENCRYPT(String, String),
+    DECRYPT(String, String),
 }
 
 fn reverse(mode: &Mode) -> Mode {
     match mode {
         Mode::FORWARD => Mode::FORWARD,
-        Mode::ENCRYPT => Mode::DECRYPT,
-        Mode::DECRYPT => Mode::ENCRYPT,
+        Mode::ENCRYPT(key, iv) => Mode::DECRYPT(key.to_string(), iv.to_string()),
+        Mode::DECRYPT(key, iv) => Mode::ENCRYPT(key.to_string(), iv.to_string()),
     }
 }
 
@@ -29,9 +29,9 @@ async fn read(
 ) -> io::Result<usize> {
     match mode {
         Mode::FORWARD => src.read(buf).await,
-        Mode::ENCRYPT => src.read(buf).await,
-        Mode::DECRYPT => {
-            let mut msg = Message::new();
+        Mode::ENCRYPT(_, _) => src.read(buf).await,
+        Mode::DECRYPT(key, iv) => {
+            let mut msg = Message::new(&key, &iv);
             msg.unpack(src).await?;
             let bytes = msg.as_bytes();
             if bytes.len() > buf.len() {
@@ -55,15 +55,15 @@ async fn pipe(
     let mut buf = [0; BUF_SIZE];
     loop {
         match read(src, &mut buf, &mode).await {
-            Ok(len) if len > 0 => match mode {
+            Ok(len) if len > 0 => match &mode {
                 Mode::FORWARD => dest.write_all(&buf[0..len]).await?,
-                Mode::ENCRYPT => {
-                    let mut msg = Message::new();
+                Mode::ENCRYPT(key, iv) => {
+                    let mut msg = Message::new(key, iv);
                     msg.write_bytes(&buf[0..len]);
                     let msg = msg.pack();
                     dest.write_all(&msg).await?
                 }
-                Mode::DECRYPT => dest.write_all(&buf[0..len]).await?,
+                Mode::DECRYPT(_, _) => dest.write_all(&buf[0..len]).await?,
             },
             _ => {
                 dest.shutdown().await?;
@@ -78,7 +78,7 @@ pub async fn bridge(src: &mut TcpStream, dest: &mut TcpStream, mode: Mode) -> cr
     let (mut dest_read, mut dest_write) = io::split(dest);
 
     let dest_to_src = async { pipe(&mut dest_read, &mut src_write, reverse(&mode)).await };
-    let src_to_dest = async { pipe(&mut src_read, &mut dest_write, mode).await };
+    let src_to_dest = async { pipe(&mut src_read, &mut dest_write, mode.clone()).await };
 
     match tokio::try_join!(src_to_dest, dest_to_src) {
         Err(e) => Err(Box::new(e)),

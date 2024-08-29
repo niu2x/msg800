@@ -18,14 +18,11 @@ pub struct Message {
 impl Message {
     const MAGIC: u64 = 0x20240828;
 
-    const key:&'static[u8; 16] = b"an example very ";
-    const iv:&'static[u8; 16] = b"unique IV 12345 "; // IV 必须是 16 字节长
-
-    pub fn new() -> Message {
+    pub fn new(key: &str, iv: &str) -> Message {
         Message {
             buf: ByteBuffer::new(),
-            cipher_enc : Aes128CbcEnc::new(Self::key.into(), Self::iv.into()),
-            cipher_dec : Aes128CbcDec::new(Self::key.into(), Self::iv.into()),
+            cipher_enc : Aes128CbcEnc::new(key.as_bytes()[0..16].into(), iv.as_bytes()[0..16].into()),
+            cipher_dec : Aes128CbcDec::new(key.as_bytes()[0..16].into(), iv.as_bytes()[0..16].into()),
         }
     }
 
