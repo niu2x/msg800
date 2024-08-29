@@ -11,3 +11,11 @@ clap = { version = "4.5.16", features = ["derive"] }
 strum = "0.26.3"
 strum_macros = "0.26.4"
 tokio = { version = "1.39.3", features = ["full"] }
+
+[[bin]]
+name = "msg800-socks5"
+path = "src/bin/socks5.rs"
+
+[[bin]]
+name = "msg800-tunel"
+path = "src/bin/tunel.rs"
