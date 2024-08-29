@@ -1,8 +1,9 @@
-use crate::msg::Message;
 use crate::tunel;
 use std::error::Error;
 pub use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
+use bytebuffer::ByteBuffer;
+
 // use tokio::try_join;
 // type AuthMethods = Vec<u8>;
 
@@ -52,7 +53,7 @@ impl Socks5 {
 
         let mut up_stream = self.connect_up_stream(&target_addr).await?;
 
-        tunel::bridge(&mut up_stream, &mut self.down_stream, tunel::Mode::FORWARD).await
+        tunel::bridge(&mut up_stream, &mut self.down_stream).await
     }
 
     async fn read_auth(&mut self) -> Result<AuthHeader> {
@@ -120,7 +121,7 @@ impl Socks5 {
             target_addr.addr_type,
         ];
 
-        let mut msg = Message::new("", "");
+        let mut msg = ByteBuffer::new();
         msg.write_bytes(&buf);
 
         let Addr::DOMAIN(domain) = &target_addr.addr;

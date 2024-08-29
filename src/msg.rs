@@ -18,11 +18,11 @@ pub struct Message {
 impl Message {
     const MAGIC: u64 = 0x20240828;
 
-    pub fn new(key: &str, iv: &str) -> Message {
+    pub fn new(key: &[u8; 16], iv: &[u8; 16]) -> Message {
         Message {
             buf: ByteBuffer::new(),
-            cipher_enc : Aes128CbcEnc::new(key.as_bytes()[0..16].into(), iv.as_bytes()[0..16].into()),
-            cipher_dec : Aes128CbcDec::new(key.as_bytes()[0..16].into(), iv.as_bytes()[0..16].into()),
+            cipher_enc : Aes128CbcEnc::new(key.into(), iv.into()),
+            cipher_dec : Aes128CbcDec::new(key.into(), iv.into()),
         }
     }
 
