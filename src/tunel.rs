@@ -6,10 +6,14 @@ use crate::msg::Message;
 use strum_macros::EnumString;
 
 
+/// Tunel Mode
 #[derive(EnumString, Clone)]
 pub enum Mode {
+    /// forward data without any encoding/decoding
     FORWARD,
+    /// encrypt data
     ENCRYPT,
+    /// decrypt data
     DECRYPT,
 }
 
@@ -21,6 +25,7 @@ fn reverse(mode: &Mode) -> Mode {
     }
 }
 
+/// Tunel between two tcp stream
 pub struct Tunel {
     key: [u8; 16],
     iv: [u8; 16],
@@ -35,6 +40,7 @@ impl Tunel {
         }
     }
 
+    /// bridge two tcp stream, transfer data between them
     pub async fn bridge(&mut self, src: &mut TcpStream, dest: &mut TcpStream, mode: Mode) -> crate::Result<()> {
         let (mut src_read, mut src_write) = io::split(src);
         let (mut dest_read, mut dest_write) = io::split(dest);
@@ -107,6 +113,7 @@ impl Tunel {
 
 }
 
+/// bridge two tcp stream, transfer data between them, without any encoding/decoding
 pub async fn bridge(src: &mut TcpStream, dest: &mut TcpStream) -> crate::Result<()> {
     let mut tunel = Tunel::new([0; 16], [0;16]);
     tunel.bridge(src, dest, Mode::FORWARD).await

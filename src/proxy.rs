@@ -29,6 +29,7 @@ struct TargetAddress {
     pub port: u16,
 }
 
+/// Socks5 Proxy
 pub struct Socks5 {
     down_stream: TcpStream,
 }
