@@ -13,6 +13,9 @@ pub struct Message {
     cipher_dec: Aes128CbcDec,
 }
 
+// pub type Key = [u8; 16];
+// pub type IV = [u8; 16];
+
 impl Message {
     const MAGIC: u64 = 0x20240828;
 

@@ -42,26 +42,25 @@ fn get_secret(name: &str) -> [u8; 16] {
         .expect(&format!("{name} should be 16 bytes"))
 }
 
-async fn process(mut src: TcpStream, target_addr: &str, mode: Mode) -> Result<()> {
-    let mut dest = TcpStream::connect(target_addr).await?;
-    let key;
-    let iv;
-
+fn get_secret_key(mode: &Mode) -> ([u8; 16], [u8; 16]) {
     match mode {
         Mode::ENCRYPT => {
-            key = get_secret("MSG800_TUNEL_ENC_KEY");
-            iv = get_secret("MSG800_TUNEL_ENC_IV");
+            let key = get_secret("MSG800_TUNEL_ENC_KEY");
+            let iv = get_secret("MSG800_TUNEL_ENC_IV");
+            (key, iv)
         }
         Mode::DECRYPT => {
-            key = get_secret("MSG800_TUNEL_DEC_KEY");
-            iv = get_secret("MSG800_TUNEL_DEC_IV");
+            let key = get_secret("MSG800_TUNEL_DEC_KEY");
+            let iv = get_secret("MSG800_TUNEL_DEC_IV");
+            (key, iv)
         }
-        Mode::FORWARD => {
-            key = [0; 16];
-            iv = [0; 16];
-        }
-    };
+        Mode::FORWARD => ([0; 16], [0; 16]),
+    }
+}
 
+async fn process(mut src: TcpStream, target_addr: &str, mode: Mode) -> Result<()> {
+    let (key, iv) = get_secret_key(&mode);
+    let mut dest = TcpStream::connect(target_addr).await?;
     let mut tunel = tunel::Tunel::new(key, iv);
     tunel.bridge(&mut src, &mut dest, mode).await?;
     Ok(())
