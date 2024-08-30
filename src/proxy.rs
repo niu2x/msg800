@@ -1,6 +1,6 @@
 use crate::tunel;
 use std::error::Error;
-pub use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use bytebuffer::ByteBuffer;
 
