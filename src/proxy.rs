@@ -1,6 +1,6 @@
 use crate::tunel;
 use std::error::Error;
-pub use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use bytebuffer::ByteBuffer;
 
@@ -29,6 +29,7 @@ struct TargetAddress {
     pub port: u16,
 }
 
+/// Socks5 Proxy
 pub struct Socks5 {
     down_stream: TcpStream,
 }
