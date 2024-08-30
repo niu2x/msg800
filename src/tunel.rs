@@ -5,7 +5,6 @@ use tokio::net::TcpStream;
 use crate::msg::Message;
 use strum_macros::EnumString;
 
-
 /// Tunel Mode
 #[derive(EnumString, Clone)]
 pub enum Mode {
@@ -32,21 +31,28 @@ pub struct Tunel {
 }
 
 impl Tunel {
-
-
-    pub fn new(key: [u8; 16], iv:[u8; 16]) -> Self{
-        Self {
-            key, iv
-        }
+    pub fn new(key: [u8; 16], iv: [u8; 16]) -> Self {
+        Self { key, iv }
     }
 
     /// bridge two tcp stream, transfer data between them
-    pub async fn bridge(&mut self, src: &mut TcpStream, dest: &mut TcpStream, mode: Mode) -> crate::Result<()> {
+    pub async fn bridge(
+        &mut self,
+        src: &mut TcpStream,
+        dest: &mut TcpStream,
+        mode: Mode,
+    ) -> crate::Result<()> {
         let (mut src_read, mut src_write) = io::split(src);
         let (mut dest_read, mut dest_write) = io::split(dest);
 
-        let dest_to_src = async { self.pipe(&mut dest_read, &mut src_write, reverse(&mode)).await };
-        let src_to_dest = async { self.pipe(&mut src_read, &mut dest_write, mode.clone()).await };
+        let dest_to_src = async {
+            self.pipe(&mut dest_read, &mut src_write, reverse(&mode))
+                .await
+        };
+        let src_to_dest = async {
+            self.pipe(&mut src_read, &mut dest_write, mode.clone())
+                .await
+        };
 
         match tokio::try_join!(src_to_dest, dest_to_src) {
             Err(e) => Err(Box::new(e)),
@@ -54,8 +60,8 @@ impl Tunel {
         }
     }
 
-
-    async fn read(&self,
+    async fn read(
+        &self,
         src: &mut ReadHalf<&mut TcpStream>,
         buf: &mut [u8],
         mode: &Mode,
@@ -80,14 +86,12 @@ impl Tunel {
         }
     }
 
-
     async fn pipe(
-        & self,
+        &self,
         src: &mut ReadHalf<&mut TcpStream>,
         dest: &mut WriteHalf<&mut TcpStream>,
         mode: Mode,
     ) -> Result<(), std::io::Error> {
-
         const BUF_SIZE: usize = 4096;
         let mut buf = [0; BUF_SIZE];
 
@@ -110,11 +114,10 @@ impl Tunel {
             }
         }
     }
-
 }
 
 /// bridge two tcp stream, transfer data between them, without any encoding/decoding
 pub async fn bridge(src: &mut TcpStream, dest: &mut TcpStream) -> crate::Result<()> {
-    let mut tunel = Tunel::new([0; 16], [0;16]);
+    let mut tunel = Tunel::new([0; 16], [0; 16]);
     tunel.bridge(src, dest, Mode::FORWARD).await
 }

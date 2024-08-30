@@ -1,9 +1,9 @@
 use clap::Parser;
-use msg800::{self, tunel};
 use msg800::tunel::Mode;
+use msg800::{self, tunel};
+use std::env;
 use std::str::FromStr;
 use tokio::net::{TcpListener, TcpStream};
-use std::env;
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -18,7 +18,7 @@ struct Args {
 async fn main() {
     let args = Args::parse();
 
-    let  mode = Mode::from_str(&args.mode).unwrap();
+    let mode = Mode::from_str(&args.mode).unwrap();
     let source_addr = format!("{}:{}", args.source_host, args.source_port);
     let target_addr = format!("{}:{}", args.target_host, args.target_port);
 
@@ -34,9 +34,12 @@ async fn main() {
     }
 }
 
-fn get_secret(name: &str) -> [u8; 16]{
-    env::var(name).expect(&format!("tunel need {name}"))
-        .as_bytes().try_into().expect(&format!("{name} should be 16 bytes"))
+fn get_secret(name: &str) -> [u8; 16] {
+    env::var(name)
+        .expect(&format!("tunel need {name}"))
+        .as_bytes()
+        .try_into()
+        .expect(&format!("{name} should be 16 bytes"))
 }
 
 async fn process(mut src: TcpStream, target_addr: &str, mode: Mode) -> msg800::Result<()> {
@@ -45,16 +48,16 @@ async fn process(mut src: TcpStream, target_addr: &str, mode: Mode) -> msg800::R
     let iv;
 
     match mode {
-        Mode::ENCRYPT=> {
+        Mode::ENCRYPT => {
             key = get_secret("MSG800_TUNEL_ENC_KEY");
             iv = get_secret("MSG800_TUNEL_ENC_IV");
-        },
-        Mode::DECRYPT=> {
-         key = get_secret("MSG800_TUNEL_DEC_KEY");
+        }
+        Mode::DECRYPT => {
+            key = get_secret("MSG800_TUNEL_DEC_KEY");
             iv = get_secret("MSG800_TUNEL_DEC_IV");
         }
         Mode::FORWARD => {
-            key =[0; 16];
+            key = [0; 16];
             iv = [0; 16];
         }
     };

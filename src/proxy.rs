@@ -1,8 +1,8 @@
 use crate::tunel;
+use bytebuffer::ByteBuffer;
 use std::error::Error;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
-use bytebuffer::ByteBuffer;
 
 // use tokio::try_join;
 // type AuthMethods = Vec<u8>;
