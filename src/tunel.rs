@@ -5,6 +5,7 @@ use tokio::net::TcpStream;
 use crate::msg::Message;
 use strum_macros::EnumString;
 
+
 #[derive(EnumString, Clone)]
 pub enum Mode {
     FORWARD,
@@ -19,10 +20,6 @@ fn reverse(mode: &Mode) -> Mode {
         Mode::DECRYPT => Mode::ENCRYPT,
     }
 }
-
-const BUF_SIZE: usize = 4096;
-
-
 
 pub struct Tunel {
     key: [u8; 16],
@@ -84,7 +81,10 @@ impl Tunel {
         dest: &mut WriteHalf<&mut TcpStream>,
         mode: Mode,
     ) -> Result<(), std::io::Error> {
+
+        const BUF_SIZE: usize = 4096;
         let mut buf = [0; BUF_SIZE];
+
         loop {
             match self.read(src, &mut buf, &mode).await {
                 Ok(len) if len > 0 => match &mode {
@@ -99,17 +99,13 @@ impl Tunel {
                 },
                 _ => {
                     dest.shutdown().await?;
-                    break Ok::<(), std::io::Error>(());
+                    break Ok(());
                 }
             }
         }
     }
 
 }
-
-
-
-
 
 pub async fn bridge(src: &mut TcpStream, dest: &mut TcpStream) -> crate::Result<()> {
     let mut tunel = Tunel::new([0; 16], [0;16]);
