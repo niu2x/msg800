@@ -1,6 +1,7 @@
 use crate::tunel;
+use crate::Result;
 use bytebuffer::ByteBuffer;
-use std::error::Error;
+use std::io::{Error, ErrorKind};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
@@ -33,8 +34,6 @@ struct TargetAddress {
 pub struct Socks5 {
     down_stream: TcpStream,
 }
-
-type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 impl Socks5 {
     pub fn new(socket: TcpStream) -> Socks5 {
@@ -87,18 +86,23 @@ impl Socks5 {
         let addr_type = self.down_stream.read_u8().await?;
 
         if command != 1 {
-            return Err("unsupport command".into());
+            return Err(Error::new(ErrorKind::Other, "unsupport command"));
         }
 
         if addr_type != 3 {
-            return Err("unsupport addr_type".into());
+            return Err(Error::new(ErrorKind::Other, "unsupport addr"));
         }
 
         let domain_len = self.down_stream.read_u8().await?;
 
         let mut domain = vec![0; domain_len as usize];
         self.down_stream.read_exact(&mut domain).await?;
-        let domain = String::from_utf8(domain)?;
+        let domain = match String::from_utf8(domain) {
+            Ok(x) => x,
+            _ => {
+                return Err(Error::new(ErrorKind::Other, "domain is not utf8"));
+            }
+        };
 
         let addr = Addr::DOMAIN(domain);
 

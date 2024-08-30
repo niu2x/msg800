@@ -1,5 +1,6 @@
 use clap::Parser;
 use msg800::proxy::Socks5;
+use msg800::Result;
 use tokio::net::{TcpListener, TcpStream};
 
 #[derive(Parser, Debug)]
@@ -26,7 +27,7 @@ async fn main() {
     }
 }
 
-async fn process(socket: TcpStream) -> msg800::Result<()> {
+async fn process(socket: TcpStream) -> Result<()> {
     let mut socks5 = Socks5::new(socket);
     let _ = socks5.process().await?;
     Ok(())

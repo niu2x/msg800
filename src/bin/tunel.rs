@@ -1,6 +1,6 @@
 use clap::Parser;
-use msg800::tunel::Mode;
-use msg800::{self, tunel};
+use msg800::tunel::{self, Mode};
+use msg800::{self, Result};
 use std::env;
 use std::str::FromStr;
 use tokio::net::{TcpListener, TcpStream};
@@ -42,7 +42,7 @@ fn get_secret(name: &str) -> [u8; 16] {
         .expect(&format!("{name} should be 16 bytes"))
 }
 
-async fn process(mut src: TcpStream, target_addr: &str, mode: Mode) -> msg800::Result<()> {
+async fn process(mut src: TcpStream, target_addr: &str, mode: Mode) -> Result<()> {
     let mut dest = TcpStream::connect(target_addr).await?;
     let key;
     let iv;
