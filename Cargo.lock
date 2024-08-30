@@ -333,7 +333,7 @@ dependencies = [
 
 [[package]]
 name = "msg800"
-version = "1.0.0"
+version = "1.1.1"
 dependencies = [
  "aes",
  "bytebuffer",
