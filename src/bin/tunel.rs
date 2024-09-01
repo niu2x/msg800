@@ -1,6 +1,6 @@
 use clap::Parser;
-use msg800::tunel::{self, Mode};
-use msg800::{self, Result};
+use msg800::tunel::{Mode, Tunel};
+use msg800::Result;
 use std::env;
 use std::str::FromStr;
 use tokio::net::{TcpListener, TcpStream};
@@ -30,7 +30,6 @@ async fn main() {
     loop {
         let (socket, _) = listener.accept().await.unwrap();
         let target_addr = target_addr.clone();
-        let mode = mode.clone();
         tokio::spawn(async move {
             let _ = process(socket, &target_addr, mode).await;
         });
@@ -64,7 +63,6 @@ fn get_secret_key(mode: &Mode) -> ([u8; 16], [u8; 16]) {
 async fn process(mut src: TcpStream, target_addr: &str, mode: Mode) -> Result<()> {
     let (key, iv) = get_secret_key(&mode);
     let mut dest = TcpStream::connect(target_addr).await?;
-    let mut tunel = tunel::Tunel::new(key, iv);
-    tunel.bridge(&mut src, &mut dest, mode).await?;
-    Ok(())
+    let mut tunel = Tunel::new(key, iv);
+    tunel.bridge(&mut src, &mut dest, mode).await
 }

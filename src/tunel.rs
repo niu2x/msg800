@@ -7,7 +7,7 @@ use crate::Result;
 use strum_macros::EnumString;
 
 /// Tunel Mode
-#[derive(EnumString, Clone)]
+#[derive(EnumString, Clone, Copy)]
 pub enum Mode {
     /// forward data without any encoding/decoding
     FORWARD,
