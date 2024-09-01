@@ -22,6 +22,9 @@ async fn main() {
     let source_addr = format!("{}:{}", args.source_host, args.source_port);
     let target_addr = format!("{}:{}", args.target_host, args.target_port);
 
+    println!("listen on {}:{}", args.source_host, args.source_port);
+    println!("forward to {}:{}", args.target_host, args.target_port);
+
     let listener = TcpListener::bind(&source_addr).await.unwrap();
 
     loop {
