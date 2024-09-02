@@ -1,5 +1,4 @@
-use tokio::io::ErrorKind;
-use tokio::io::{self, AsyncReadExt, AsyncWriteExt, Error, ReadHalf, WriteHalf};
+use tokio::io::{self, AsyncReadExt, AsyncWriteExt, Error, ErrorKind, ReadHalf, WriteHalf};
 use tokio::net::TcpStream;
 
 use crate::msg::Message;
