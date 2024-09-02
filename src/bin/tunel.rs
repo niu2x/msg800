@@ -21,6 +21,7 @@ async fn main() {
     let mode = Mode::from_str(&args.mode).unwrap();
     let source_addr = format!("{}:{}", args.source_host, args.source_port);
     let target_addr = format!("{}:{}", args.target_host, args.target_port);
+    let target_addr = Box::new(target_addr);
 
     println!("listen on {}:{}", args.source_host, args.source_port);
     println!("forward to {}:{}", args.target_host, args.target_port);
