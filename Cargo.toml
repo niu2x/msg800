@@ -1,6 +1,6 @@
 [package]
 name = "msg800"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2021"
 
 [dependencies]
@@ -18,5 +18,5 @@ name = "msg800-socks5"
 path = "src/bin/socks5.rs"
 
 [[bin]]
-name = "msg800-tunel"
-path = "src/bin/tunel.rs"
+name = "msg800-tunnel"
+path = "src/bin/tunnel.rs"

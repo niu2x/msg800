@@ -1,17 +1,15 @@
+use crate::crypto::aes::Aes;
 use bytebuffer::ByteBuffer;
-use tokio::io::{self, AsyncReadExt};
-
-use aes::cipher::{block_padding::Pkcs7, BlockDecryptMut, BlockEncryptMut, KeyIvInit};
 use rand::{self, Rng};
-
-type Aes128CbcEnc = cbc::Encryptor<aes::Aes128>;
-type Aes128CbcDec = cbc::Decryptor<aes::Aes128>;
+use tokio::io::{self, AsyncReadExt};
 
 pub struct Message {
     buf: ByteBuffer,
-    cipher_enc: Aes128CbcEnc,
-    cipher_dec: Aes128CbcDec,
+    ciper: Aes,
 }
+
+// pub type Key = [u8; 16];
+// pub type IV = [u8; 16];
 
 impl Message {
     const MAGIC: u64 = 0x20240828;
@@ -19,8 +17,7 @@ impl Message {
     pub fn new(key: &[u8; 16], iv: &[u8; 16]) -> Message {
         Message {
             buf: ByteBuffer::new(),
-            cipher_enc: Aes128CbcEnc::new(key.into(), iv.into()),
-            cipher_dec: Aes128CbcDec::new(key.into(), iv.into()),
+            ciper: Aes::new(key.clone(), iv.clone()),
         }
     }
 
@@ -42,12 +39,7 @@ impl Message {
     pub fn pack(&mut self) -> Vec<u8> {
         let mut block = ByteBuffer::new();
         let body = self.buf.as_bytes();
-        let mut buf = vec![0; body.len() + 16];
-        let body = self
-            .cipher_enc
-            .clone()
-            .encrypt_padded_b2b_mut::<Pkcs7>(&body, &mut buf)
-            .unwrap();
+        let body = self.ciper.encrypt(&body);
         let body_len = body.len() as u64;
 
         let noise = get_noise();
@@ -77,11 +69,7 @@ impl Message {
 
         let mut temp = vec![0; total_len - 16];
         reader.read_exact(&mut temp).await?;
-        let buf = self
-            .cipher_dec
-            .clone()
-            .decrypt_padded_mut::<Pkcs7>(&mut temp[noise_len..])
-            .unwrap();
+        let buf = self.ciper.decrypt(&temp[noise_len..]);
         self.buf.write_bytes(&buf);
         Ok(())
     }

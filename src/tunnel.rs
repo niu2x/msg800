@@ -1,14 +1,18 @@
-use tokio::io::ErrorKind;
-use tokio::io::{self, AsyncReadExt, AsyncWriteExt, Error, ReadHalf, WriteHalf};
+use tokio::io::{self, AsyncReadExt, AsyncWriteExt, Error, ErrorKind, ReadHalf, WriteHalf};
 use tokio::net::TcpStream;
 
 use crate::msg::Message;
+use crate::Result;
 use strum_macros::EnumString;
 
-#[derive(EnumString, Clone)]
+/// Tunel Mode
+#[derive(EnumString, Clone, Copy)]
 pub enum Mode {
+    /// forward data without any encoding/decoding
     FORWARD,
+    /// encrypt data
     ENCRYPT,
+    /// decrypt data
     DECRYPT,
 }
 
@@ -20,39 +24,43 @@ fn reverse(mode: &Mode) -> Mode {
     }
 }
 
-const BUF_SIZE: usize = 4096;
-
-
-
+/// Tunel between two tcp stream
 pub struct Tunel {
     key: [u8; 16],
     iv: [u8; 16],
 }
 
 impl Tunel {
-
-
-    pub fn new(key: [u8; 16], iv:[u8; 16]) -> Self{
-        Self {
-            key, iv
-        }
+    pub fn new(key: [u8; 16], iv: [u8; 16]) -> Self {
+        Self { key, iv }
     }
 
-    pub async fn bridge(&mut self, src: &mut TcpStream, dest: &mut TcpStream, mode: Mode) -> crate::Result<()> {
+    /// bridge two tcp stream, transfer data between them
+    pub async fn bridge(
+        &mut self,
+        src: &mut TcpStream,
+        dest: &mut TcpStream,
+        mode: Mode,
+    ) -> Result<()> {
         let (mut src_read, mut src_write) = io::split(src);
         let (mut dest_read, mut dest_write) = io::split(dest);
 
-        let dest_to_src = async { self.pipe(&mut dest_read, &mut src_write, reverse(&mode)).await };
-        let src_to_dest = async { self.pipe(&mut src_read, &mut dest_write, mode.clone()).await };
+        let dest_to_src = async {
+            self.pipe(&mut dest_read, &mut src_write, reverse(&mode))
+                .await
+        };
+        let src_to_dest = async {
+            self.pipe(&mut src_read, &mut dest_write, mode.clone())
+                .await
+        };
 
-        match tokio::try_join!(src_to_dest, dest_to_src) {
-            Err(e) => Err(Box::new(e)),
-            _ => Ok(()),
-        }
+        tokio::try_join!(src_to_dest, dest_to_src)?;
+
+        Ok(())
     }
 
-
-    async fn read(&self,
+    async fn read(
+        &self,
         src: &mut ReadHalf<&mut TcpStream>,
         buf: &mut [u8],
         mode: &Mode,
@@ -77,14 +85,15 @@ impl Tunel {
         }
     }
 
-
     async fn pipe(
-        & self,
+        &self,
         src: &mut ReadHalf<&mut TcpStream>,
         dest: &mut WriteHalf<&mut TcpStream>,
         mode: Mode,
-    ) -> Result<(), std::io::Error> {
+    ) -> Result<()> {
+        const BUF_SIZE: usize = 4096;
         let mut buf = [0; BUF_SIZE];
+
         loop {
             match self.read(src, &mut buf, &mode).await {
                 Ok(len) if len > 0 => match &mode {
@@ -99,19 +108,15 @@ impl Tunel {
                 },
                 _ => {
                     dest.shutdown().await?;
-                    break Ok::<(), std::io::Error>(());
+                    break Ok(());
                 }
             }
         }
     }
-
 }
 
-
-
-
-
-pub async fn bridge(src: &mut TcpStream, dest: &mut TcpStream) -> crate::Result<()> {
-    let mut tunel = Tunel::new([0; 16], [0;16]);
+/// bridge two tcp stream, transfer data between them, without any encoding/decoding
+pub async fn bridge(src: &mut TcpStream, dest: &mut TcpStream) -> Result<()> {
+    let mut tunel = Tunel::new([0; 16], [0; 16]);
     tunel.bridge(src, dest, Mode::FORWARD).await
 }

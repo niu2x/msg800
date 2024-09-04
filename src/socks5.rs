@@ -1,8 +1,9 @@
-use crate::tunel;
-use std::error::Error;
-pub use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpStream;
+use crate::Result;
+use crate::tunnel;
 use bytebuffer::ByteBuffer;
+use std::io::{Error, ErrorKind};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpStream;
 
 // use tokio::try_join;
 // type AuthMethods = Vec<u8>;
@@ -29,11 +30,10 @@ struct TargetAddress {
     pub port: u16,
 }
 
+/// Socks5 Proxy
 pub struct Socks5 {
     down_stream: TcpStream,
 }
-
-type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 impl Socks5 {
     pub fn new(socket: TcpStream) -> Socks5 {
@@ -44,16 +44,13 @@ impl Socks5 {
 
     pub async fn process(&mut self) -> Result<()> {
         let _ = self.read_auth().await?;
-
         self.resp_auth().await?;
 
         let target_addr = self.read_target_address().await?;
 
         let _ = self.resp_client_cmd(&target_addr).await?;
-
         let mut up_stream = self.connect_up_stream(&target_addr).await?;
-
-        tunel::bridge(&mut up_stream, &mut self.down_stream).await
+        tunnel::bridge(&mut up_stream, &mut self.down_stream).await
     }
 
     async fn read_auth(&mut self) -> Result<AuthHeader> {
@@ -86,18 +83,23 @@ impl Socks5 {
         let addr_type = self.down_stream.read_u8().await?;
 
         if command != 1 {
-            return Err("unsupport command".into());
+            return Err(Error::new(ErrorKind::Other, "unsupport command"));
         }
 
         if addr_type != 3 {
-            return Err("unsupport addr_type".into());
+            return Err(Error::new(ErrorKind::Other, "unsupport addr"));
         }
 
         let domain_len = self.down_stream.read_u8().await?;
 
         let mut domain = vec![0; domain_len as usize];
         self.down_stream.read_exact(&mut domain).await?;
-        let domain = String::from_utf8(domain)?;
+        let domain = match String::from_utf8(domain) {
+            Ok(x) => x,
+            _ => {
+                return Err(Error::new(ErrorKind::Other, "domain is not utf8"));
+            }
+        };
 
         let addr = Addr::DOMAIN(domain);
 
