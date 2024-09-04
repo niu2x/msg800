@@ -1,5 +1,5 @@
 use clap::Parser;
-use msg800::tunel::{Mode, Tunel};
+use msg800::tunnel::{Mode, Tunel};
 use msg800::Result;
 use std::env;
 use std::str::FromStr;

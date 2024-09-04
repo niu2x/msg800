@@ -1,5 +1,5 @@
-use crate::tunel;
 use crate::Result;
+use crate::tunnel;
 use bytebuffer::ByteBuffer;
 use std::io::{Error, ErrorKind};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -44,16 +44,13 @@ impl Socks5 {
 
     pub async fn process(&mut self) -> Result<()> {
         let _ = self.read_auth().await?;
-
         self.resp_auth().await?;
 
         let target_addr = self.read_target_address().await?;
 
         let _ = self.resp_client_cmd(&target_addr).await?;
-
         let mut up_stream = self.connect_up_stream(&target_addr).await?;
-
-        tunel::bridge(&mut up_stream, &mut self.down_stream).await
+        tunnel::bridge(&mut up_stream, &mut self.down_stream).await
     }
 
     async fn read_auth(&mut self) -> Result<AuthHeader> {

@@ -19,4 +19,4 @@ path = "src/bin/socks5.rs"
 
 [[bin]]
 name = "msg800-tunel"
-path = "src/bin/tunel.rs"
+path = "src/bin/tunnel.rs"
