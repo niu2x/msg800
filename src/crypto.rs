@@ -27,7 +27,7 @@ pub mod aes {
                 .encrypt_padded_b2b_mut::<Pkcs7>(data, &mut buf)
                 .unwrap()
                 .len();
-            buf.resize(enc_len, 0);
+            buf.truncate(enc_len);
             buf
         }
         pub fn decrypt(&self, data: &[u8]) -> Vec<u8> {
@@ -40,7 +40,7 @@ pub mod aes {
                 .decrypt_padded_b2b_mut::<Pkcs7>(data, &mut buf)
                 .unwrap()
                 .len();
-            buf.resize(enc_len, 0);
+            buf.truncate(enc_len);
             buf
         }
     }
